@@ -10,7 +10,7 @@
         "parser": "html",
         "tabWidth": 4,
         "jsxBracketSameLine": true,
-        "printWidth": 80,
+        "printWidth": 120,
         "htmlWhitespaceSensitivity": "ignore"
       }
     }

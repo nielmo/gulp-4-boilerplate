@@ -1,14 +1,13 @@
 /**
-* Toggle modal
-* ===========
-* Add `id` in modal
-* ===========
-* Add `data-modal` attr to button/link.
-* The `data-modal` value should be
-* same as id of the modal to be called.
-*/
-
-/* global fadeOut, fadeIn */
+ * Toggle modal
+ * ===========
+ * Add `id` in modal
+ * ===========
+ * Add `data-modal` attr to button/link.
+ * The `data-modal` value should be
+ * same as id of the modal to be called.
+ */
+import { fadeIn, fadeOut } from './fade';
 
 const hideModal = (modal, offset) => {
   modal.addEventListener('click', event => {
@@ -41,3 +40,5 @@ const toggleModal = () => {
     });
   }
 };
+
+export default toggleModal;

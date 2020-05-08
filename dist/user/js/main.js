@@ -1,1 +1,74 @@
-"use strict";function fadeOut(e){e.style.opacity=1,function t(){(e.style.opacity-=.1)<0?e.style.display="none":requestAnimationFrame(t)}()}function fadeIn(o,t){o.style.opacity=0,o.style.display=t||"flex",function t(){var e=parseFloat(o.style.opacity);1<(e+=.1)||(o.style.opacity=e,requestAnimationFrame(t))}()}window.onload=function(){toggleModal()};var multipleEvents=function(e,t,o){t.split(" ").forEach(function(t){e.addEventListener(t,o,!1)})},hideModal=function(e,o){e.addEventListener("click",function(t){t.target.className.includes("js-close-modal")&&(document.body.classList.remove("body--fixed"),document.body.style.top="initial",window.scrollTo(0,o),fadeOut(e))})},toggleModal=function(){var t=document.querySelectorAll(".js-open-modal");t&&t.forEach(function(n){n.addEventListener("click",function(){var t=n.dataset.modal,e=document.getElementById(t),o=window.pageYOffset;document.body.classList.add("body--fixed"),document.body.style.top="-".concat(o,"px"),fadeIn(e),hideModal(e,o)})})};
+'use strict';
+
+(function() {
+  'use strict';
+
+  var fadeOut = function fadeOut(el) {
+    el.style.opacity = 1;
+
+    (function fade() {
+      if ((el.style.opacity -= 0.1) < 0) {
+        el.style.display = 'none';
+      } else {
+        requestAnimationFrame(fade);
+      }
+    })();
+  };
+
+  var fadeIn = function fadeIn(el, display) {
+    el.style.opacity = 0;
+    el.style.display = display || 'flex';
+
+    (function fade() {
+      var val = parseFloat(el.style.opacity);
+
+      if (!((val += 0.1) > 1)) {
+        el.style.opacity = val;
+        requestAnimationFrame(fade);
+      }
+    })();
+  };
+  /**
+   * Toggle modal
+   * ===========
+   * Add `id` in modal
+   * ===========
+   * Add `data-modal` attr to button/link.
+   * The `data-modal` value should be
+   * same as id of the modal to be called.
+   */
+
+  var hideModal = function hideModal(modal, offset) {
+    modal.addEventListener('click', function(event) {
+      var target = event.target;
+
+      if (target.className.includes('js-close-modal')) {
+        document.body.classList.remove('body--fixed');
+        document.body.style.top = 'initial';
+        window.scrollTo(0, offset);
+        fadeOut(modal);
+      }
+    });
+  };
+
+  var toggleModal = function toggleModal() {
+    var buttons = document.querySelectorAll('.js-open-modal');
+
+    if (buttons) {
+      buttons.forEach(function(button) {
+        button.addEventListener('click', function() {
+          var modal = button.dataset.modal;
+          var element = document.getElementById(modal);
+          var scrollPosition = window.pageYOffset;
+          document.body.classList.add('body--fixed');
+          document.body.style.top = '-'.concat(scrollPosition, 'px');
+          fadeIn(element);
+          hideModal(element, scrollPosition);
+        });
+      });
+    }
+  };
+  /* global toggleModal */
+
+  toggleModal();
+})();

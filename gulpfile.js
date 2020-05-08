@@ -1,201 +1,144 @@
-const settings = {
-  server: true,
-  styles: true,
-  pug: true,
-  scripts: true,
-  user: true,
-  admin: true
-};
+const { src, dest, watch, series, parallel } = require('gulp');
+const rename = require('gulp-rename');
+const sass = require('gulp-sass');
+const postcss = require('gulp-postcss');
+const prefix = require('autoprefixer');
+const minify = require('cssnano');
+const pug = require('gulp-pug');
+const browserSync = require('browser-sync');
+const rollup = require('gulp-rollup');
+const babel = require('gulp-babel');
+const uglify = require('gulp-uglify');
+const prettier = require('gulp-prettier');
+// const log = require('fancy-log'); - debug purposes only
+
+let target = null;
+if (process.env.COMPILE_FOR === 'user') {
+  target = 'user';
+} else {
+  target = 'admin';
+}
 
 const paths = {
-  server: "dist/",
-  user: {
-    input: "src/user",
-    ouput: "dist/user",
+  server: `dist/${target}`,
+  dest: {
+    input: `src/${target}`,
+    ouput: `dist/${target}`,
     styles: {
-      input: "src/user/scss/main.scss",
-      output: "dist/user/css"
+      input: `src/${target}/scss/main.scss`,
+      output: `dist/${target}/css`,
     },
     pug: {
-      input: "src/user/pug/pages/*.pug",
-      output: "dist/user/pages",
-      base: "src/user/pug/pages"
+      input: `src/${target}/pug/pages/*.pug`,
+      output: `dist/${target}/`,
+      base: `src/${target}/pug/pages`,
     },
     scripts: {
-      input: "src/user/js/**/*.js",
-      output: "dist/user/js"
-    }
+      input: `src/${target}/js/**/*.js`,
+      output: `dist/${target}/js`,
+    },
   },
-  admin: {
-    input: "src/admin",
-    ouput: "dist/admin",
-    styles: {
-      input: "src/admin/scss/main.scss",
-      output: "dist/admin/css"
-    },
-    pug: {
-      input: "src/admin/pug/pages/*.pug",
-      output: "dist/admin/pages",
-      base: "src/admin/pug/pages"
-    },
-    scripts: {
-      input: "src/admin/js/**/*.js",
-      output: "dist/admin/js"
-    }
-  }
 };
 
-const { gulp, src, dest, watch, series, parallel } = require("gulp");
-const rename = require("gulp-rename");
+// BUILD PUG TO HTML
+const buildPug = (inputPath, outputPath, basePage) => {
+  const process = src(inputPath, { base: basePage })
+    .pipe(pug({ pretty: true }))
+    .pipe(
+      rename({
+        extname: '.html',
+      })
+    )
+    .pipe(dest(outputPath));
 
-// scss -> css
-const sass = require("gulp-sass");
-const postcss = require("gulp-postcss");
-const prefix = require("autoprefixer");
-const minify = require("cssnano");
+  return process;
+};
 
-// pug -> html
-const pug = require("gulp-pug");
-
-//server
-const browserSync = require("browser-sync");
-
-//scripts
-const babel = require('gulp-babel');
-const eslint = require('gulp-eslint');
-const uglify = require('gulp-uglify');
-const concat = require('gulp-concat');
-
-const done = (done) => done();
-
-// build scss files
-const buildStyles = function(inputPath, outputPath) {
-  // Not run this function if false in settings
-  if (!settings.styles) return done;
-
-
-  return src(inputPath)
+// STYLE/CSS RELATED BUILDS
+const buildStyles = (inputPath, outputPath) => {
+  const process = src(inputPath)
     .pipe(sass())
     .pipe(postcss([prefix()]))
-    .pipe(dest(outputPath))
-    .pipe(rename({ suffix: ".min" }))
+    .pipe(prettier())
+    .pipe(dest(outputPath));
+
+  return process;
+};
+
+// JS RELATED BUILDS
+const buildScripts = (inputPath, outputPath) => {
+  const process = src(inputPath)
+    .pipe(
+      rollup({
+        input: `./src/${target}/js/main.js`,
+        output: { format: 'iife' },
+      })
+    )
+    .pipe(
+      babel({
+        presets: ['@babel/preset-env'],
+      })
+    )
+    .pipe(prettier())
+    .pipe(dest(outputPath));
+
+  return process;
+};
+
+// BROWSER RELATED CONTROLS
+const startServer = done => {
+  browserSync.init({
+    server: {
+      baseDir: paths.server,
+    },
+  });
+
+  done();
+};
+
+// ALL COMPILATION WILL BE CONDUCTED HERE
+const userCompile = done => {
+  const watching = watch(paths.dest.input);
+
+  watching.on('all', () => {
+    buildStyles(paths.dest.styles.input, paths.dest.styles.output);
+    buildPug(paths.dest.pug.input, paths.dest.pug.output, paths.dest.pug.base);
+    buildScripts(paths.dest.scripts.input, paths.dest.scripts.output);
+
+    browserSync.reload();
+  });
+  done();
+};
+
+// MINIFY CSS
+const uglyStyle = done => {
+  src(`${paths.dest.styles.output}/main.css`)
+    .pipe(rename({ suffix: '.min' }))
     .pipe(
       postcss([
         minify({
           discardComments: {
-            removeAll: true
-          }
-        })
+            removeAll: true,
+          },
+        }),
       ])
     )
-    .pipe(dest(outputPath));
+    .pipe(dest(paths.dest.styles.output));
+
+  done();
 };
 
-// build pug files
-const buildPug = function(inputPath, outputPath, basePage) {
-  // Not run this function if false in settings
-  if (!settings.pug) return done;
-
-  return src(inputPath, { base: basePage })
-  .pipe(pug())
-  .pipe(
-    rename({
-      extname: ".html"
-    })
-  )
-  .pipe(dest(outputPath));
-};
-
-//lint scripts
-const lintScripts = function(inputPath) {
-  if (!settings.scripts) return done;
-
-  return src(inputPath)
-    .pipe(eslint())
-    .pipe(eslint.format())
-    .pipe(eslint.failAfterError());
-};
-
-//build scripts
-const buildScripts = function(inputPath, outputPath) {
-  if (!settings.scripts) return done;
-
-  return src(inputPath)
-    .pipe(babel({
-      presets: ['@babel/preset-env']
-    }))
-    .pipe(concat('main.js'))
+// MINIFY JS
+const uglyScript = done => {
+  src(`${paths.dest.scripts.output}/main.js`)
+    .pipe(rename({ suffix: '.min' }))
     .pipe(uglify())
-    .pipe(dest(outputPath));
-};
+    .pipe(dest(paths.dest.scripts.output));
 
-//start server
-const startServer = function () {
-  if (!settings.server) return done;
-
-  browserSync.init({
-    server: {
-      baseDir: paths.server
-    }
-  });
-
-  done;
-};
-
-// Watch for changes to the src directory
-const reloadBrowser = function (done) {
-  if (!settings.server) return done();
-  browserSync.reload();
   done();
 };
 
-// Watch for changes in user pages
-const userWatchSource = function(done) {
-  if (!settings.user) return done;
+// INITIALIZE SERVER AND BUILD CODES
+exports.ugly = series(uglyStyle, uglyScript);
 
-  const watcher = watch(paths.user.input, series(parallel(userWatchSource, reloadBrowser)));
-  watcher.on('all', () => {
-    buildStyles(paths.user.styles.input, paths.user.styles.output);
-    buildPug(paths.user.pug.input, paths.user.pug.output, paths.user.pug.base);
-    lintScripts(paths.user.scripts.input);
-    buildScripts(paths.user.scripts.input, paths.user.scripts.output);
-  });
-  done();
-};
-
-exports.userWatch = series(
-  parallel(
-    userWatchSource,
-    startServer
-  )
-);
-
-// Watch for changes in admin pages
-const adminWatchSource = function(done) {
-  if (!settings.admin) return done;
-
-  const watcher = watch(paths.admin.input, series(parallel(adminWatchSource, reloadBrowser)));
-  watcher.on('all', () => {
-    buildStyles(paths.admin.styles.input, paths.admin.styles.output);
-    buildPug(paths.admin.pug.input, paths.admin.pug.output, paths.admin.pug.base);
-    lintScripts(paths.admin.scripts.input);
-    buildScripts(paths.admin.scripts.input, paths.admin.scripts.output);
-  });
-  done();
-};
-
-exports.adminWatch = series(
-  parallel(
-    adminWatchSource,
-    startServer
-  )
-);
-
-// Watch for changes in both user and admin pages
-exports.watch = series(
-  parallel(
-    userWatchSource,
-    adminWatchSource,
-    startServer
-  )
-);
+exports.default = parallel(startServer, userCompile);

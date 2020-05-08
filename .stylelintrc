@@ -1,12 +1,9 @@
 {
   "extends": "stylelint-config-standard",
   "ignoreFiles": [
-    "src/user/scss/generic/*.scss",
-    "src/user/scss/trumps/*.scss",
-    "src/user/scss/tools/*.scss",
-    "src/admin/scss/generic/*.scss",
-    "src/admin/scss/trumps/*.scss",
-    "src/admin/scss/tools/*.scss",
+    "src/**/scss/generic/*.scss",
+    "src/**/scss/tools/*.scss",
+    "src/**/scss/trumps/*.scss",
   ],
   rules: {
     "at-rule-no-unknown": [true, {

@@ -1,1 +1,7 @@
-"use strict";function fadeOut(e){e.style.opacity=1,function t(){(e.style.opacity-=.1)<0?e.style.display="none":requestAnimationFrame(t)}()}function fadeIn(o,t){o.style.opacity=0,o.style.display=t||"flex",function t(){var e=parseFloat(o.style.opacity);1<(e+=.1)||(o.style.opacity=e,requestAnimationFrame(t))}()}window.onload=function(){openSelectBox(),toggleMenu(),toggleModal()};var multipleEvents=function(e,t,o){t.split(" ").forEach(function(t){e.addEventListener(t,o,!1)})},hideModal=function(e,o){e.addEventListener("click",function(t){t.target.className.includes("js-close-modal")&&(document.body.classList.remove("body--fixed"),document.body.style.top="initial",window.scrollTo(0,o),fadeOut(e))})},toggleModal=function(){var t=document.querySelectorAll(".js-open-modal");t&&t.forEach(function(n){n.addEventListener("click",function(){var t=n.dataset.modal,e=document.getElementById(t),o=window.pageYOffset;document.body.classList.add("body--fixed"),document.body.style.top="-".concat(o,"px"),fadeIn(e),hideModal(e,o)})})};
+'use strict';
+
+(function() {
+  'use strict';
+
+  console.log('admin scripts here');
+})();
